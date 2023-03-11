@@ -1,8 +1,17 @@
 // The module 'vscode' contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
-import path = require('path');
 import * as vscode from 'vscode';
 
+/**
+ * This function returns the needed options for the view
+ * 
+ * The enableScripts value specifies if the view will be able to use javascript
+ * The localResourceRoots points to the path that will store all needed media assets for the extension
+ * like images and styles
+ * 
+ * @param extensionUri 
+ * @returns 
+ */
 function getWebviewOptions(extensionUri: vscode.Uri): vscode.WebviewOptions & vscode.WebviewPanelOptions {
 	return {
 		enableScripts: true,
@@ -16,19 +25,23 @@ interface IAquariumPanel {
 }
 
 class AquariumWebviewContainer implements IAquariumPanel {
-	protected _extensionUri: vscode.Uri;
-	protected _disposables: vscode.Disposable[] = [];
+	protected _extensionUri: vscode.Uri; // Store the extension URI to access files relative to the extension
 
-	constructor(
-		extensionUri: vscode.Uri,
-	) {
+	constructor(extensionUri: vscode.Uri) {
 		this._extensionUri = extensionUri;
 	}
 
+	/**
+	 * This function needs to be implemented by any subclasses of the AquariumWebviewContainer class
+	 * to define how the webview should be formatted and returned
+	 */
 	protected getWebview(): vscode.Webview {
 		throw new Error('Not implemented');
 	}
 
+	/**
+	 * This function dynamically gets and sets the HTML for the webview
+	 */
 	protected _update() {
 		const webview = this.getWebview();
 		webview.html = this._getHtmlForWebview(webview);
@@ -36,6 +49,14 @@ class AquariumWebviewContainer implements IAquariumPanel {
 
 	public update() { }
 
+	/**
+	 * This function formats the HTML for the webview
+	 * 
+	 * It imports the style sheets and background images and sets up the structure of the HTML
+	 * 
+	 * @param webview 
+	 * @returns HTML string for the webview
+	 */
 	protected _getHtmlForWebview(webview: vscode.Webview) {
 		const stylesPathMainPath = vscode.Uri.joinPath(
 			this._extensionUri,
@@ -53,35 +74,41 @@ class AquariumWebviewContainer implements IAquariumPanel {
 
 		return `<!DOCTYPE html>
 			<html lang="en">
-			<head>
-				<meta charset="UTF-8">
-				<!--
-					Use a content security policy to only allow loading images from https or from our extension directory,
-					and only allow scripts that have a specific nonce.
-				-->
-				<meta name="viewport" content="width=device-width, initial-scale=1.0">
-				<link href="${stylesMainUri}" rel="stylesheet">
-				<style>
-					.aquarium-view {
-						background-image: url('${backgroundImageUri}');
-					}
-				</style>
-				<title>VS Code Aquarium</title>
-			</head>
-			<body>
-				<div class='aquarium-view'>
-				</div>
-			</body>
+				<head>
+					<meta charset="UTF-8">
+					<meta name="viewport" content="width=device-width, initial-scale=1.0">
+					<link href="${stylesMainUri}" rel="stylesheet">
+					<style>
+						.aquarium-view {
+							background-image: url('${backgroundImageUri}');
+						}
+					</style>
+					<title>VS Code Aquarium</title>
+				</head>
+				<body>
+					<div class='aquarium-view'>
+					</div>
+				</body>
 			</html>
 		`;
 	}
 }
 
+/**
+ * This class extends the AquariumWebviewContainer class
+ * 
+ * it sets our custom viewId variable which is the id of the custom view that we created in the package.json file
+ */
 class AquariumWebviewViewProvider extends AquariumWebviewContainer {
-	public static readonly viewType = 'aquariumView';
+	public static readonly viewId = 'aquariumView'; // id of the custom view that we want to display the aquarium in
 
-	private _webviewView?: vscode.WebviewView;
+	private _webviewView?: vscode.WebviewView; // private variable to store the webview 
 
+	/**
+	 * This function sets the webview global variable and sets the options and html of the webview
+	 * 
+	 * @param webviewView 
+	 */
 	resolveWebviewView(webviewView: vscode.WebviewView): void | Thenable<void> {
 		this._webviewView = webviewView;
 
@@ -93,6 +120,13 @@ class AquariumWebviewViewProvider extends AquariumWebviewContainer {
 		this._update();
 	}
 
+	/**
+	 * This function implements the abstract getWebView function of the AquariumWebviewContainer class
+	 * 
+	 * Checks to make sure the webview is active before returning it.
+	 * 
+	 * @returns the webview 
+	 */
 	getWebview(): vscode.Webview {
 		if (this._webviewView === undefined) {
 			throw new Error(
@@ -110,13 +144,30 @@ class AquariumWebviewViewProvider extends AquariumWebviewContainer {
 // Your extension is activated the very first time the command is executed
 export function activate(context: vscode.ExtensionContext) {
 
+	// initialize the webview provider
 	let webviewViewProvider = new AquariumWebviewViewProvider(
         context.extensionUri,
     );
 
+	// add the webview provider to the subsriptions
+	// This registers the view for the extension.
     context.subscriptions.push(
-        vscode.window.registerWebviewViewProvider(
-            AquariumWebviewViewProvider.viewType,
+		// registerWebviewViewProvider is the function that allows us to add a view to the side bar of vs-code
+		// we must pass the id of the view that is defined in the package.json
+		// and we must pass the view provider 
+		// the simplest example of the webview provider would be the following:
+		// 
+		// 	    var thisProvider={
+		// 			resolveWebviewView: function(thisWebview, thisWebviewContext, thisToken){
+		// 				thisWebviewView.webview.options={enableScripts:true}
+		// 				thisWebviewView.webview.html="<!doctype><html>[etc etc]";
+		// 			}
+		// 		};
+		// 
+		// We need to provide a resolveWebviewView function that sets the options and html of the view
+
+		vscode.window.registerWebviewViewProvider(
+            AquariumWebviewViewProvider.viewId,
             webviewViewProvider,
         ),
     );
