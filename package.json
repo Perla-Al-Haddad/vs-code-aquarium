@@ -15,17 +15,12 @@
     "views": {
       "explorer": [
         {
+          "type": "webview",
           "id": "aquariumView",
           "name": "VS Code Aquarium"
         }
       ]
-    },
-    "commands": [
-      {
-        "command": "vs-code-aquarium.helloWorld",
-        "title": "Hello World"
-      }
-    ]
+    }
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",
