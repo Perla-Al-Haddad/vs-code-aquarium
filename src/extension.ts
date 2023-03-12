@@ -1,3 +1,22 @@
+/**
+ * This code is an example of a VS Code extension that creates a custom view in the sidebar to display an aquarium. 
+ * The extension uses TypeScript to define a class hierarchy for the webview container and view provider.
+ * 
+ * The AquariumWebviewContainer class is an abstract base class that defines the interface for the view provider. 
+ * It has an abstract method getWebview() that returns a vscode.Webview object. 
+ * It also has a protected method _getHtmlForWebview() that generates the HTML for the webview.
+ * 
+ * The AquariumWebviewViewProvider class extends AquariumWebviewContainer. 
+ * It defines a static viewId property that identifies the view in the package.json file. 
+ * The resolveWebviewView() method sets the _webviewView property and configures the webview with getWebviewOptions() and _getHtmlForWebview(). 
+ * The getWebview() method checks if the _webviewView is active and returns the webview if it is.
+
+ * The activate() function initializes an instance of AquariumWebviewViewProvider and registers it as a view provider using registerWebviewViewProvider().
+
+ * Overall, this code demonstrates how to create a custom view in VS Code using TypeScript and the vscode module.
+ 
+ */
+
 // The module 'vscode' contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
@@ -57,7 +76,7 @@ class AquariumWebviewContainer implements IAquariumPanel {
 	 * @param webview 
 	 * @returns HTML string for the webview
 	 */
-	protected _getHtmlForWebview(webview: vscode.Webview) : string {
+	protected _getHtmlForWebview(webview: vscode.Webview): string {
 		const stylesPathMainPath = vscode.Uri.joinPath(
 			this._extensionUri,
 			'media',
@@ -100,7 +119,7 @@ class AquariumWebviewContainer implements IAquariumPanel {
  * it sets our custom viewId variable which is the id of the custom view that we created in the package.json file
  */
 class AquariumWebviewViewProvider extends AquariumWebviewContainer {
-	public static readonly viewId:string = 'aquariumView'; // id of the custom view that we want to display the aquarium in
+	public static readonly viewId: string = 'aquariumView'; // id of the custom view that we wa	nt to display the aquarium in
 
 	private _webviewView?: vscode.WebviewView; // private variable to store the webview 
 
@@ -112,8 +131,8 @@ class AquariumWebviewViewProvider extends AquariumWebviewContainer {
 	resolveWebviewView(webviewView: vscode.WebviewView): void | Thenable<void> {
 		this._webviewView = webviewView;
 
-		webviewView.webview.options = getWebviewOptions(this._extensionUri);
-		webviewView.webview.html = this._getHtmlForWebview(webviewView.webview);
+		this._webviewView.webview.options = getWebviewOptions(this._extensionUri);
+		this._webviewView.webview.html = this._getHtmlForWebview(this._webviewView.webview);
 	}
 
 	update() {
