@@ -57,7 +57,7 @@ class AquariumWebviewContainer implements IAquariumPanel {
 	 * @param webview 
 	 * @returns HTML string for the webview
 	 */
-	protected _getHtmlForWebview(webview: vscode.Webview) {
+	protected _getHtmlForWebview(webview: vscode.Webview) : string {
 		const stylesPathMainPath = vscode.Uri.joinPath(
 			this._extensionUri,
 			'media',
@@ -100,7 +100,7 @@ class AquariumWebviewContainer implements IAquariumPanel {
  * it sets our custom viewId variable which is the id of the custom view that we created in the package.json file
  */
 class AquariumWebviewViewProvider extends AquariumWebviewContainer {
-	public static readonly viewId = 'aquariumView'; // id of the custom view that we want to display the aquarium in
+	public static readonly viewId:string = 'aquariumView'; // id of the custom view that we want to display the aquarium in
 
 	private _webviewView?: vscode.WebviewView; // private variable to store the webview 
 
@@ -145,13 +145,11 @@ class AquariumWebviewViewProvider extends AquariumWebviewContainer {
 export function activate(context: vscode.ExtensionContext) {
 
 	// initialize the webview provider
-	let webviewViewProvider = new AquariumWebviewViewProvider(
-        context.extensionUri,
-    );
+	let webviewViewProvider = new AquariumWebviewViewProvider(context.extensionUri);
 
 	// add the webview provider to the subsriptions
 	// This registers the view for the extension.
-    context.subscriptions.push(
+	context.subscriptions.push(
 		// registerWebviewViewProvider is the function that allows us to add a view to the side bar of vs-code
 		// we must pass the id of the view that is defined in the package.json
 		// and we must pass the view provider 
@@ -167,10 +165,10 @@ export function activate(context: vscode.ExtensionContext) {
 		// We need to provide a resolveWebviewView function that sets the options and html of the view
 
 		vscode.window.registerWebviewViewProvider(
-            AquariumWebviewViewProvider.viewId,
-            webviewViewProvider,
-        ),
-    );
+			AquariumWebviewViewProvider.viewId,
+			webviewViewProvider,
+		),
+	);
 }
 
 // This method is called when your extension is deactivated
