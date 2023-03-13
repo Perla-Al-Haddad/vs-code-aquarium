@@ -3,3 +3,6 @@ dist
 node_modules
 .vscode-test/
 *.vsix
+
+.build-out/
+media/main-bundle.js

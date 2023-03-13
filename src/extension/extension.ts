@@ -10,9 +10,9 @@
  * It defines a static viewId property that identifies the view in the package.json file. 
  * The resolveWebviewView() method sets the _webviewView property and configures the webview with getWebviewOptions() and _getHtmlForWebview(). 
  * The getWebview() method checks if the _webviewView is active and returns the webview if it is.
-
+ *
  * The activate() function initializes an instance of AquariumWebviewViewProvider and registers it as a view provider using registerWebviewViewProvider().
-
+ *
  * Overall, this code demonstrates how to create a custom view in VS Code using TypeScript and the vscode module.
  
  */
@@ -20,6 +20,39 @@
 // The module 'vscode' contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
+import { ExtPosition, WebviewMessage } from '../common/types'
+
+
+const DEFAULT_POSITION = ExtPosition.panel;
+
+let webviewViewProvider: AquariumWebviewViewProvider;
+
+function handleWebviewMessage(message: WebviewMessage) {
+	switch (message.command) {
+		case 'alert':
+			vscode.window.showErrorMessage(message.text);
+			return;
+		case 'info':
+			vscode.window.showInformationMessage(message.text);
+			return;
+	}
+}
+
+function getConfigurationPosition() {
+	return vscode.workspace
+		.getConfiguration('vs-code-aquarium')
+		.get<ExtPosition>('position', DEFAULT_POSITION);
+}
+
+function getAquariumPanel(): IAquariumPanel | undefined {
+	if (getConfigurationPosition() === ExtPosition.explorer && webviewViewProvider) {
+		return webviewViewProvider;
+	} else if (AquariumPanel.currentPanel) {
+		return AquariumPanel.currentPanel;
+	} else {
+		return undefined;
+	}
+}
 
 /**
  * This function returns the needed options for the view
@@ -45,6 +78,7 @@ interface IAquariumPanel {
 
 class AquariumWebviewContainer implements IAquariumPanel {
 	protected _extensionUri: vscode.Uri; // Store the extension URI to access files relative to the extension
+	protected _disposables: vscode.Disposable[] = [];
 
 	constructor(extensionUri: vscode.Uri) {
 		this._extensionUri = extensionUri;
@@ -77,6 +111,11 @@ class AquariumWebviewContainer implements IAquariumPanel {
 	 * @returns HTML string for the webview
 	 */
 	protected _getHtmlForWebview(webview: vscode.Webview): string {
+		const scriptPathOnDisk = vscode.Uri.joinPath(
+			this._extensionUri,
+			'media',
+			'main-bundle.js',
+		);
 		const stylesPathMainPath = vscode.Uri.joinPath(
 			this._extensionUri,
 			'media',
@@ -90,6 +129,13 @@ class AquariumWebviewContainer implements IAquariumPanel {
 
 		const stylesMainUri = webview.asWebviewUri(stylesPathMainPath);
 		const backgroundImageUri = webview.asWebviewUri(backgroundPathMainPath);
+		// And the uri we use to load this script in the webview
+		const scriptUri = webview.asWebviewUri(scriptPathOnDisk);
+
+		// Get path to resource on disk
+		const baseAquariumUri = webview.asWebviewUri(
+			vscode.Uri.joinPath(this._extensionUri, 'media'),
+		);
 
 		return `<!DOCTYPE html>
 			<html lang="en">
@@ -106,7 +152,10 @@ class AquariumWebviewContainer implements IAquariumPanel {
 				</head>
 				<body>
 					<div class='aquarium-view'>
+						<canvas id="aquariumCanvas"></canvas>
 					</div>
+					<script src=${scriptUri}></script>
+					<script>aquariumApp.aquariumPanelApp("${baseAquariumUri}");</script>
 				</body>
 			</html>
 		`;
@@ -159,12 +208,104 @@ class AquariumWebviewViewProvider extends AquariumWebviewContainer {
 	}
 }
 
+
+/**
+ * Manages aquarium coding webview panels
+ */
+class AquariumPanel extends AquariumWebviewContainer implements IAquariumPanel {
+	/**
+	 * Track the currently panel. Only allow a single panel to exist at a time.
+	 */
+	public static currentPanel: AquariumPanel | undefined;
+
+	public static readonly viewType = 'aquariumCoding';
+
+	private readonly _panel: vscode.WebviewPanel;
+
+	private constructor(panel: vscode.WebviewPanel, extensionUri: vscode.Uri) {
+		super(extensionUri);
+
+		this._panel = panel;
+
+		// Set the webview's initial html content
+		this._update();
+
+		// Listen for when the panel is disposed
+		// This happens when the user closes the panel or when the panel is closed programatically
+		this._panel.onDidDispose(() => this.dispose(), null, this._disposables);
+
+		// Update the content based on view changes
+		this._panel.onDidChangeViewState(
+			() => {
+				this.update();
+			},
+			null,
+			this._disposables,
+		);
+
+		// Handle messages from the webview
+		this._panel.webview.onDidReceiveMessage(
+			handleWebviewMessage,
+			null,
+			this._disposables,
+		);
+	}
+
+	public static createOrShow(extensionUri: vscode.Uri) {
+		const panel = vscode.window.createWebviewPanel(
+			AquariumPanel.viewType,
+			vscode.l10n.t('Aquarium Panel'),
+			vscode.ViewColumn.Two,
+			getWebviewOptions(extensionUri),
+		);
+
+		AquariumPanel.currentPanel = new AquariumPanel(
+			panel,
+			extensionUri
+		);
+	}
+
+	public static revive(
+		panel: vscode.WebviewPanel,
+		extensionUri: vscode.Uri
+	) {
+		AquariumPanel.currentPanel = new AquariumPanel(
+			panel,
+			extensionUri
+		);
+	}
+
+	public dispose() {
+		AquariumPanel.currentPanel = undefined;
+
+		// Clean up our resources
+		this._panel.dispose();
+
+		while (this._disposables.length) {
+			const x = this._disposables.pop();
+			if (x) {
+				x.dispose();
+			}
+		}
+	}
+
+	public update() {
+		if (this._panel.visible) {
+			this._update();
+		}
+	}
+
+	getWebview(): vscode.Webview {
+		return this._panel.webview;
+	}
+}
+
 // This method is called when your extension is activated
 // Your extension is activated the very first time the command is executed
 export function activate(context: vscode.ExtensionContext) {
 
 	// initialize the webview provider
-	let webviewViewProvider = new AquariumWebviewViewProvider(context.extensionUri);
+	webviewViewProvider = new AquariumWebviewViewProvider(context.extensionUri);
 
 	// add the webview provider to the subsriptions
 	// This registers the view for the extension.
@@ -187,6 +328,13 @@ export function activate(context: vscode.ExtensionContext) {
 			AquariumWebviewViewProvider.viewId,
 			webviewViewProvider,
 		),
+	);
+
+
+	context.subscriptions.push(
+		vscode.commands.registerCommand('vs-code-aquarium.spawn-fish', async () => {
+			const panel = getAquariumPanel();
+		}),
 	);
 }
 
