@@ -20,7 +20,8 @@
 // The module 'vscode' contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
-import { ExtPosition, WebviewMessage } from '../common/types'
+import { ExtPosition, WebviewMessage } from '../common/types';
+import { stringListAsQuickPickItemList } from '../common/localize';
 
 
 const DEFAULT_POSITION = ExtPosition.panel;
@@ -45,7 +46,9 @@ function getConfigurationPosition() {
 }
 
 function getAquariumPanel(): IAquariumPanel | undefined {
-	if (getConfigurationPosition() === ExtPosition.explorer && webviewViewProvider) {
+	let explorer = ExtPosition.panel;
+	let configPostion = getConfigurationPosition();
+	if (explorer === configPostion && webviewViewProvider) {
 		return webviewViewProvider;
 	} else if (AquariumPanel.currentPanel) {
 		return AquariumPanel.currentPanel;
@@ -74,6 +77,7 @@ function getWebviewOptions(extensionUri: vscode.Uri): vscode.WebviewOptions & vs
 
 interface IAquariumPanel {
 	update(): void;
+    spawnPet(type: string): void;
 }
 
 class AquariumWebviewContainer implements IAquariumPanel {
@@ -101,6 +105,13 @@ class AquariumWebviewContainer implements IAquariumPanel {
 	}
 
 	public update() { }
+
+	public spawnPet(type: string): void {
+		this.getWebview().postMessage({
+            command: 'spawn-fish',
+			type: type
+        });
+	}
 
 	/**
 	 * This function formats the HTML for the webview
@@ -153,6 +164,7 @@ class AquariumWebviewContainer implements IAquariumPanel {
 				<body>
 					<div class='aquarium-view'>
 						<canvas id="aquariumCanvas"></canvas>
+						<div id="fishContainer"></div>
 					</div>
 					<script src=${scriptUri}></script>
 					<script>aquariumApp.aquariumPanelApp("${baseAquariumUri}");</script>
@@ -334,6 +346,19 @@ export function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(
 		vscode.commands.registerCommand('vs-code-aquarium.spawn-fish', async () => {
 			const panel = getAquariumPanel();
+			if (panel) {
+				const selectedPetType = await vscode.window.showQuickPick(
+                	stringListAsQuickPickItemList<string>(["Goldfish"]),
+                    {
+                        placeHolder: vscode.l10n.t('Select a fish'),
+                    },
+                );
+                if (selectedPetType === undefined) {
+                    return;
+                }
+
+				panel.spawnPet(selectedPetType.value);
+			}
 		}),
 	);
 }

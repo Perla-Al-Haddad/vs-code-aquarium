@@ -24,6 +24,10 @@
           "name": "VS Code Aquarium"
         }
       ]
+    },
+    "commands": {
+      "command": "vs-code-aquarium.spawn-fish",
+      "title": "Spawn Fish"
     }
   },
   "scripts": {

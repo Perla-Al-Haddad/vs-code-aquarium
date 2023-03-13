@@ -1,5 +1,8 @@
 // This script will be run within the webview itself
 
+import { createFish } from "./fish";
+import { Goldfish } from "./fishes/GoldFish";
+
 
 let canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D;
 
@@ -23,6 +26,25 @@ function initCanvas() {
     ctx.canvas.height = window.innerHeight;
 }
 
+
+function addFishToPanel(fishType: string, baseAquariumUri: string) {
+    var fishSpriteElement: HTMLImageElement = document.createElement('img');
+    fishSpriteElement.className = 'fish';
+    (document.getElementById('fishContainer') as HTMLDivElement).appendChild(
+        fishSpriteElement,
+    );
+
+    var collisionElement: HTMLDivElement = document.createElement('div');
+    collisionElement.className = 'collision';
+    (document.getElementById('fishContainer') as HTMLDivElement).appendChild(
+        collisionElement,
+    );
+    
+    const root = baseAquariumUri + '/' + fishType + '.gif';
+    let fish = createFish(fishType, fishSpriteElement, collisionElement, root);
+}
+
+
 export function aquariumPanelApp(baseAquariumUri: string) {
     // move background code to here
 
@@ -35,6 +57,8 @@ export function aquariumPanelApp(baseAquariumUri: string) {
         switch (message.command) {
             case 'spawn-fish':
                 console.log("spawn-fish event");
+                console.log(message);
+                addFishToPanel(message["type"], baseAquariumUri);
                 break;
         }
     });
