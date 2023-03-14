@@ -14,3 +14,16 @@ export class WebviewMessage {
         this.command = command;
     }
 }
+
+export class Point {
+    x: number;
+    y: number;
+
+    constructor(x: number, y: number) {
+        this.x = x;
+        this.y = y;
+    }
+}
+
+export const randomInt = (min:number, max:number) =>
+  Math.floor(Math.random() * (max - min + 1)) + min;

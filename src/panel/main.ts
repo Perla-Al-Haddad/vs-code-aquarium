@@ -42,6 +42,7 @@ function addFishToPanel(fishType: string, baseAquariumUri: string) {
     
     const root = baseAquariumUri + '/' + fishType + '.gif';
     let fish = createFish(fishType, fishSpriteElement, collisionElement, root);
+    fish.nextFrame();
 }
 
 
