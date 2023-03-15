@@ -348,7 +348,7 @@ export function activate(context: vscode.ExtensionContext) {
 			const panel = getAquariumPanel();
 			if (panel) {
 				const selectedPetType = await vscode.window.showQuickPick(
-                	stringListAsQuickPickItemList<string>(["Goldfish"]),
+                	stringListAsQuickPickItemList<string>(["Goldfish", "Turtle"]),
                     {
                         placeHolder: vscode.l10n.t('Select a fish'),
                     },
