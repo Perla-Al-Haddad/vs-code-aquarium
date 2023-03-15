@@ -1,5 +1,6 @@
 // This script will be run within the webview itself
 
+import { FishType } from "../common/types";
 import { createFish } from "./fish";
 import { Goldfish } from "./fishes/GoldFish";
 
@@ -27,19 +28,13 @@ function initCanvas() {
 }
 
 
-function addFishToPanel(fishType: string, baseAquariumUri: string) {
+function addFishToPanel(fishType: FishType, baseAquariumUri: string) {
     var fishSpriteElement: HTMLImageElement = document.createElement('img');
     fishSpriteElement.className = 'fish';
     (document.getElementById('fishContainer') as HTMLDivElement).appendChild(
         fishSpriteElement,
     );
 
-    var collisionElement: HTMLDivElement = document.createElement('div');
-    collisionElement.className = 'collision';
-    (document.getElementById('fishContainer') as HTMLDivElement).appendChild(
-        collisionElement,
-    );
-    
     const root = baseAquariumUri + '/' + fishType + '.gif';
     let fish = createFish(fishType, fishSpriteElement, root);
     fish.nextFrame();

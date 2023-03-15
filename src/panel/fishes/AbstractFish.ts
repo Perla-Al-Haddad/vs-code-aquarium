@@ -1,6 +1,6 @@
 import { Point, randomInt } from "../../common/types";
 
-const PADDING = 20;
+const PADDING = 40;
 
 export abstract class AbstractFish {
 
@@ -21,17 +21,18 @@ export abstract class AbstractFish {
     ) {
         this.el = spriteElement;
         this.petRoot = petRoot;
-        this.initSprite();
-        
-        this._hdirection = randomInt(0, 1) ? 1 : -1;
-        this._vdirection = randomInt(0, 1) ? 1 : -1;
-        
+
         this._left = 0;
         this._bottom = 0;
         this._width = 0;
         this._height = 0;
 
+        this._hdirection = randomInt(0, 1) ? 1 : -1;
+        this._vdirection = randomInt(0, 1) ? 1 : -1;
+
         this.speed = 1;
+        
+        this.initSprite();
     }
 
     initSprite() {
@@ -87,11 +88,11 @@ export abstract class AbstractFish {
     }
     moveHoriz() {
         if (
-            this._left + PADDING > document.body.clientWidth && 
-            this._left > 0
+            this._left + this._width - PADDING > document.body.offsetWidth && 
+            this._left > -PADDING
         ) {
             this.moveLeft();
-        } else if (this._left + this._width - PADDING < 0) {
+        } else if (this._left < -PADDING) {
             this.moveRight();
         }
         this._left = this._left + this.speed * this._hdirection;

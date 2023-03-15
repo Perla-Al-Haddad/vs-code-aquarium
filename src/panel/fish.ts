@@ -1,17 +1,18 @@
+import { FishType } from "../common/types";
 import { Goldfish } from "./fishes/GoldFish";
 import { Turtle } from "./fishes/Turtle";
 
 export function createFish(
-    petType: string,
+    fishType: FishType,
     el: HTMLImageElement,
     petRoot: string,
 ) {
-    switch (petType) {
-        case "Goldfish":
+    switch (fishType) {
+        case FishType.goldfish:
             return new Goldfish(el, petRoot);
-        case "Turtle": 
+        case FishType.turtle: 
             return new Turtle(el, petRoot);
         default:
-            throw Error("Pet type doesn't exist");
+            throw Error("Fish type doesn't exist");
     }
 }
